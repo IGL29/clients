@@ -673,12 +673,13 @@ a {
 }
 
 .error-message {
-  color: #f06a4d;
-  font-size: 10px;
-  line-height: 13px;
-  text-align: center;
+  display: block;
   width: 51%;
   margin: 0 auto 10px;
+  font-size: 10px;
+  line-height: 13px;
+  color: #f06a4d;
+  text-align: center;
 }
 
 .container-contact:last-of-type {

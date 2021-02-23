@@ -13,6 +13,7 @@
   let timerId = null;
   let doingResearch = false;
   let currentClientId = null;
+  let buttonEditElem = null;
 
   buttonAddClient.addEventListener('click', () => {
     mainContainer.insertAdjacentHTML('beforeend', templateBackgroundLayer);
@@ -50,9 +51,11 @@
           });
         }
         const response = await createClient(inputName.value, inputSurname.value, inputLastName.value, inputContactsArray);
-        checkingErrorRequest(response)
-        outputDataToTable(true);
-        automaticallyСloseWindowModal();
+
+        if(response !== undefined) {
+          outputDataToTable(true);
+          automaticallyCloseWindowModal();
+        }
       }
     });
     buttonAddContact.addEventListener('click', addInputContact);
@@ -64,17 +67,17 @@
     const inputContactElements = document.querySelectorAll('.container-contact__input');
     let errors = [];
 
-    if (inputName.value.trim() == '') {
+    if (inputName.value.trim() === '') {
       inputName.classList.add('input-error');
       errors.push('Необходимо заполнить поле с именем клиента');
     }
-    if (inputSurname.value.trim() == '') {
+    if (inputSurname.value.trim() === '') {
       inputSurname.classList.add('input-error');
       errors.push('Необходимо заполнить поле с фамилией клиента');
     }
     if (inputContactElements.length > 0) {
       inputContactElements.forEach(input => {
-        if (input.value.trim() == '') {
+        if (input.value.trim() === '') {
           input.classList.add('input-error');
           let contactTitle = null;
 
@@ -117,7 +120,7 @@
     if (document.querySelector('.list-active') && ev.target !== document.querySelector('.list-active')) {
       document.querySelector('.list-active').classList.remove('list-active');
     } else if (document.querySelector('.list-active') && document.querySelectorAll('.list-active').length > 1) {
-      selectArr = document.querySelectorAll('.list-active');
+      const selectArr = document.querySelectorAll('.list-active');
       selectArr.forEach(select => {
         if (select !== ev.target) {
           select.classList.remove('list-active');
@@ -142,7 +145,7 @@
   }
 
   function addInputContact(ev, contacts) {
-    if (contacts == undefined) {
+    if (contacts === undefined) {
       ev.preventDefault();
       buildInputContact(ev);
       let inputArr = document.querySelectorAll('.container-contact__input');
@@ -168,7 +171,7 @@
   }
 
   function buildInputContact(ev, contact) {
-    if (contact == undefined) {
+    if (contact === undefined) {
       ev.target.insertAdjacentHTML('beforebegin', templateSelect);
     } else {
       document.querySelector('.btn-add-contact').insertAdjacentHTML('beforebegin', templateSelect);
@@ -178,8 +181,10 @@
     let wrapperSelectNew = wrapperSelectNodeList[wrapperSelectNodeList.length - 1];
 
     if (contact !== undefined) {
-      if (contact.type == 'phone') {
+      if (contact.type === 'phone') {
         wrapperSelectNew.parentElement.children[1].setAttribute('type', 'number');
+      } else if (contact.type === 'mail'){
+        wrapperSelectNew.parentElement.children[1].setAttribute('type', 'email');
       } else {
         wrapperSelectNew.parentElement.children[1].setAttribute('type', 'text');
       }
@@ -193,7 +198,7 @@
           wrapperSelectNew.children[0].textContent = wrapperSelectNew.children[1].children[i].textContent;
         } else if (wrapperSelectNew.children[1].children[i].getAttribute('data-type') !== contact.type && wrapperSelectNew.children[1].children[i].classList.contains('active')) {
           wrapperSelectNew.children[1].children[i].classList.remove('active');
-        } else if (wrapperSelectNew.children[1].children[i].getAttribute('data-type') == contact.type && wrapperSelectNew.children[1].children[i].classList.contains('active')) {
+        } else if (wrapperSelectNew.children[1].children[i].getAttribute('data-type') === contact.type && wrapperSelectNew.children[1].children[i].classList.contains('active')) {
           wrapperSelectNew.children[0].textContent = wrapperSelectNew.children[1].children[i].textContent;
         }
       }
@@ -213,8 +218,10 @@
         let dataAttribute = ev.target.getAttribute('data-type');
         this.parentElement.children[1].setAttribute('data-type', dataAttribute);
 
-        if (dataAttribute == 'phone') {
+        if (dataAttribute === 'phone') {
           this.parentElement.children[1].setAttribute('type', 'number');
+        } else if (dataAttribute === 'mail'){
+          this.parentElement.children[1].setAttribute('type', 'email');
         } else {
           this.parentElement.children[1].setAttribute('type', 'text');
         }
@@ -235,19 +242,17 @@
         surname: surnameValue,
         lastName: lastNameValue,
         contacts: inputContactsArray,
-      })
+      }),
     });
 
     if (response.ok) {
-      let data = await response.json();
-      return data;
+      return await response.json();
     } else {
-      let data = await response.json();
-      return data;
+      checkingErrorRequest(await response.json());
     }
   }
 
-  function automaticallyСloseWindowModal() {
+  function automaticallyCloseWindowModal() {
     const backgroundLayerElement = document.querySelector('.background-layer');
     const ModalAddContactElement = document.querySelector('.container-modal');
     body.classList.remove('overflow-hidden');
@@ -256,9 +261,9 @@
   };
 
   function closeWindowModal(ev) {
-    if (ev.target == this || (document.querySelector('.btn-remove-client') && ev.target.classList.contains('btn-remove-client'))) {
+    if (ev.target === this || (document.querySelector('.btn-remove-client') && ev.target.classList.contains('btn-remove-client'))) {
       ev.preventDefault();
-      automaticallyСloseWindowModal();
+      automaticallyCloseWindowModal();
     }
   }
 
@@ -304,22 +309,18 @@
       }
     }
     if (response.ok) {
-      let data = responseClone;
-      return data;
+      return responseClone;
     } else {
-      let data = responseClone;
-      return data;
+      checkingErrorRequest(responseClone);
     }
   }
 
   async function getClient(id) {
     let response = await fetch(`http://localhost:3000/api/clients/${id}`);
     if (response.ok) {
-      let data = await response.json();
-      return data;
+      return await response.json();
     } else {
-      let data = await response.json();
-      return data;
+      checkingErrorRequest(await response.json());
     }
   }
 
@@ -340,98 +341,101 @@
     }
   }
 
-  let buttonEditElem = null;
-
   async function editClientData(ev) {
 
     currentClientId = ev.target.parentElement.cells[0].textContent;
 
-    let data = await getClient(currentClientId);
-    let name = data.name == undefined ? '' : data.name;
-    let surname = data.surname == undefined ? '' : data.surname;
-    let lastName = data.lastName == undefined ? '' : data.lastName;
-    let contacts = data.contacts == undefined ? '' : data.contacts;
-    buttonEditElem = ev.target;
+    const data = await getClient(currentClientId);
 
-    const modalTemplateEdit = `<div class="container-modal">
-      <div class="wrapper-modal modal">
-        <div class="flex-container">
-          <h2 class="modal__title title-edit-data">Изменить данные</h2>
-          <span class="modal__span-id">ID:${currentClientId}</span>
-          <button class="close-modal"></button>
+    if (data !== undefined) {
+
+      const name = data.name === undefined ? '' : data.name;
+      const surname = data.surname === undefined ? '' : data.surname;
+      const lastName = data.lastName === undefined ? '' : data.lastName;
+      const contacts = data.contacts === undefined ? '' : data.contacts;
+      buttonEditElem = ev.target;
+  
+      const modalTemplateEdit = `<div class="container-modal">
+        <div class="wrapper-modal modal">
+          <div class="flex-container">
+            <h2 class="modal__title title-edit-data">Изменить данные</h2>
+            <span class="modal__span-id">ID:${currentClientId}</span>
+            <button class="close-modal"></button>
+          </div>
+        
+          <form class="modal__form form">
+            <div class="form__wrapper-input">
+              <input id="surname" class="form__input" type="text" data-type="surname" value="${surname}">
+              <label for="surname" class="form__label">Фамилия</label>
+            </div>
+            <div class="form__wrapper-input">
+              <input id="name" class="form__input" type="text" data-type="name" value="${name}">
+              <label for="name" class="form__label">Имя</label>
+            </div>
+            <div class="form__wrapper-input">
+              <input id="lastName" class="form__input" type="text" data-type="lastName" value="${lastName}">
+              <label for="lastName" class="form__label">Отчество</label>
+            </div>
+            <div class="wrapper-adding-contacts"><button class="btn-add-contact">Добавить контакт</button></div>
+            <button class="btn-save-client" type="submit">Сохранить</button>
+            <button class="form__btn-remove-client">Удалить клиента</button>
+          </form>
         </div>
-      
-        <form class="modal__form form">
-          <div class="form__wrapper-input">
-            <input id="surname" class="form__input" type="text" data-type="surname" value="${surname}">
-            <label for="surname" class="form__label">Фамилия</label>
-          </div>
-          <div class="form__wrapper-input">
-            <input id="name" class="form__input" type="text" data-type="name" value="${name}">
-            <label for="name" class="form__label">Имя</label>
-          </div>
-          <div class="form__wrapper-input">
-            <input id="lastName" class="form__input" type="text" data-type="lastName" value="${lastName}">
-            <label for="lastName" class="form__label">Отчество</label>
-          </div>
-          <div class="wrapper-adding-contacts"><button class="btn-add-contact">Добавить контакт</button></div>
-          <button class="btn-save-client" type="submit">Сохранить</button>
-          <button class="form__btn-remove-client">Удалить клиента</button>
-        </form>
-      </div>
-    </div>`;
-
-    mainContainer.insertAdjacentHTML('beforeend', templateBackgroundLayer);
-    mainContainer.insertAdjacentHTML('beforeend', modalTemplateEdit);
-
-    let buttonAddContact = document.querySelector('.btn-add-contact')
-    let buttonCloseModal = document.querySelector('.close-modal');
-    let buttonDeleteClient = document.querySelector('.form__btn-remove-client');
-    let containerModal = document.querySelector('.container-modal');
-
-    buttonCloseModal.addEventListener('click', closeWindowModal);
-    containerModal.addEventListener('click', closeWindowModal);
-    buttonAddContact.addEventListener('click', addInputContact);
-    containerModal.addEventListener('click', closeSelect);
-
-    checkForEmptinessInput();
-    checkingErrorRequest(data);
-
-    if (contacts.length !== 0) {
-      addInputContact(ev, contacts);
-    }
-
-    const inputName = document.querySelector('.form__input[data-type="name"]');
-    const inputSurname = document.querySelector('.form__input[data-type="surname"]');
-    inputName.addEventListener('input', removeInputErrorHighlighting);
-    inputSurname.addEventListener('input', removeInputErrorHighlighting);
-
-    buttonDeleteClient.addEventListener('click', () => {
-      automaticallyСloseWindowModal();
-      confirmDeletion(ev);
-    })
-
-    document.querySelector('.modal__form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (checkingValidityForm()) {
-        let inputName = document.querySelector('.form__input[data-type="name"]');
-        let inputSurname = document.querySelector('.form__input[data-type="surname"]');
-        let inputLastName = document.querySelector('.form__input[data-type="lastName"]');
-        let inputContactsArray = [];
-        if (document.querySelector('.container-contact__input')) {
-          let inputContactElements = document.querySelectorAll('.container-contact__input');
-          inputContactElements.forEach(input => {
-            inputContactsArray.push({ type: input.getAttribute('data-type'), value: input.value });
-          });
-        }
-
-        let data = await editClient(inputName.value, inputSurname.value, inputLastName.value, inputContactsArray, buttonEditElem);
-        checkingErrorRequest(data);
-        bodyTable.innerHTML = '';
-        outputDataToTable();
-        automaticallyСloseWindowModal();
+      </div>`;
+  
+      mainContainer.insertAdjacentHTML('beforeend', templateBackgroundLayer);
+      mainContainer.insertAdjacentHTML('beforeend', modalTemplateEdit);
+  
+      const buttonAddContact = document.querySelector('.btn-add-contact')
+      const buttonCloseModal = document.querySelector('.close-modal');
+      const buttonDeleteClient = document.querySelector('.form__btn-remove-client');
+      const containerModal = document.querySelector('.container-modal');
+  
+      buttonCloseModal.addEventListener('click', closeWindowModal);
+      containerModal.addEventListener('click', closeWindowModal);
+      buttonAddContact.addEventListener('click', addInputContact);
+      containerModal.addEventListener('click', closeSelect);
+  
+      checkForEmptinessInput();
+  
+      if (contacts.length !== 0) {
+        addInputContact(ev, contacts);
       }
-    })
+  
+      const inputName = document.querySelector('.form__input[data-type="name"]');
+      const inputSurname = document.querySelector('.form__input[data-type="surname"]');
+      inputName.addEventListener('input', removeInputErrorHighlighting);
+      inputSurname.addEventListener('input', removeInputErrorHighlighting);
+  
+      buttonDeleteClient.addEventListener('click', () => {
+        automaticallyCloseWindowModal();
+        confirmDeletion(ev);
+      })
+  
+      document.querySelector('.modal__form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (checkingValidityForm()) {
+          const inputName = document.querySelector('.form__input[data-type="name"]');
+          const inputSurname = document.querySelector('.form__input[data-type="surname"]');
+          const inputLastName = document.querySelector('.form__input[data-type="lastName"]');
+          let inputContactsArray = [];
+          if (document.querySelector('.container-contact__input')) {
+            let inputContactElements = document.querySelectorAll('.container-contact__input');
+            inputContactElements.forEach(input => {
+              inputContactsArray.push({ type: input.getAttribute('data-type'), value: input.value });
+            });
+          }
+  
+          const data = await editClient(inputName.value, inputSurname.value, inputLastName.value, inputContactsArray, buttonEditElem);
+          
+          if (data !== undefined) {
+            bodyTable.innerHTML = '';
+            outputDataToTable();
+            automaticallyCloseWindowModal();
+          }
+        }
+      })
+    }
   }
 
   function checkingErrorRequest(data) {
@@ -456,7 +460,7 @@
   }
 
   function checkForEmptinessInput(ev) {
-    if (ev == undefined) {
+    if (ev === undefined) {
       let formInput = document.querySelectorAll('.form__input');
       formInput = Array.from(formInput);
       formInput.forEach(input => {
@@ -501,11 +505,9 @@
     }
 
     if (response.ok) {
-      let data = responseClone;
-      return data;
+      return responseClone;
     } else {
-      let data = responseClone;
-      return data;
+      checkingErrorRequest(responseClone);
     }
   }
 
@@ -513,65 +515,32 @@
 
     const addingNewClient = flag;
     const data = await getAllClients();
-    checkingErrorRequest(data);
 
-    if (addingNewClient) {
-      const newClient = data[data.length - 1];
-      buildingTable(newClient);
+    if (data !== undefined) {
 
-      const tdDelete = document.querySelectorAll('.td-delete');
-      tdDelete[tdDelete.length - 1].addEventListener('click', confirmDeletion);
-
-      let tdContacts = document.querySelectorAll('.tbody__td[data-type="contacts"]');
-      tdContacts = tdContacts[tdContacts.length - 1];
-
-      const tdEdit = document.querySelectorAll('.td-edit');
-
-      tdEdit[tdEdit.length - 1].addEventListener('click', editClientData);
-
-      if (tdContacts.childElementCount > 5) {
-        let countHiddenElements = 0;
-        for (let i = 4; tdContacts.childElementCount > i; i++) {
-          tdContacts.children[i].classList.add('display-none');
-          countHiddenElements++;
-        }
-        const spanTemplate = `<span class="span-contact-more" data-type="more" data-count="${countHiddenElements}"><span class="tooltip">Показать больше контактов</span></span>`;
-        tdContacts.insertAdjacentHTML('beforeend', spanTemplate);
-
-        const spanContactMore = document.querySelectorAll('.span-contact-more');
-        spanContactMore[spanContactMore.length - 1].addEventListener('click', (ev) => {
-          let td = ev.target.parentElement;
-          ev.target.remove();
-          for (let i = 4; td.childElementCount > i; i++) {
-            td.children[i].classList.remove('display-none');
-          }
-        })
-      }
-    } else {
-      data.forEach((client) => {
-        buildingTable(client);
-      })
-      const tdDelete = document.querySelectorAll('.td-delete');
-      tdDelete.forEach((item) => {
-        item.addEventListener('click', confirmDeletion);
-      });
-
-      const tdEdit = document.querySelectorAll('.td-edit');
-      tdEdit.forEach(item => {
-        item.addEventListener('click', editClientData);
-      })
-
-      const tdContacts = document.querySelectorAll('.tbody__td[data-type="contacts"]');
-      tdContacts.forEach(td => {
-        if (td.childElementCount > 5) {
+      if (addingNewClient) {
+        const newClient = data[data.length - 1];
+        buildingTable(newClient);
+  
+        const tdDelete = document.querySelectorAll('.td-delete');
+        tdDelete[tdDelete.length - 1].addEventListener('click', confirmDeletion);
+  
+        let tdContacts = document.querySelectorAll('.tbody__td[data-type="contacts"]');
+        tdContacts = tdContacts[tdContacts.length - 1];
+  
+        const tdEdit = document.querySelectorAll('.td-edit');
+  
+        tdEdit[tdEdit.length - 1].addEventListener('click', editClientData);
+  
+        if (tdContacts.childElementCount > 5) {
           let countHiddenElements = 0;
-          for (let i = 4; td.childElementCount > i; i++) {
-            td.children[i].classList.add('display-none');
+          for (let i = 4; tdContacts.childElementCount > i; i++) {
+            tdContacts.children[i].classList.add('display-none');
             countHiddenElements++;
           }
           const spanTemplate = `<span class="span-contact-more" data-type="more" data-count="${countHiddenElements}"><span class="tooltip">Показать больше контактов</span></span>`;
-          td.insertAdjacentHTML('beforeend', spanTemplate);
-
+          tdContacts.insertAdjacentHTML('beforeend', spanTemplate);
+  
           const spanContactMore = document.querySelectorAll('.span-contact-more');
           spanContactMore[spanContactMore.length - 1].addEventListener('click', (ev) => {
             let td = ev.target.parentElement;
@@ -581,7 +550,42 @@
             }
           })
         }
-      })
+      } else {
+        data.forEach((client) => {
+          buildingTable(client);
+        })
+        const tdDelete = document.querySelectorAll('.td-delete');
+        tdDelete.forEach((item) => {
+          item.addEventListener('click', confirmDeletion);
+        });
+  
+        const tdEdit = document.querySelectorAll('.td-edit');
+        tdEdit.forEach(item => {
+          item.addEventListener('click', editClientData);
+        })
+  
+        const tdContacts = document.querySelectorAll('.tbody__td[data-type="contacts"]');
+        tdContacts.forEach(td => {
+          if (td.childElementCount > 5) {
+            let countHiddenElements = 0;
+            for (let i = 4; td.childElementCount > i; i++) {
+              td.children[i].classList.add('display-none');
+              countHiddenElements++;
+            }
+            const spanTemplate = `<span class="span-contact-more" data-type="more" data-count="${countHiddenElements}"><span class="tooltip">Показать больше контактов</span></span>`;
+            td.insertAdjacentHTML('beforeend', spanTemplate);
+  
+            const spanContactMore = document.querySelectorAll('.span-contact-more');
+            spanContactMore[spanContactMore.length - 1].addEventListener('click', (ev) => {
+              let td = ev.target.parentElement;
+              ev.target.remove();
+              for (let i = 4; td.childElementCount > i; i++) {
+                td.children[i].classList.remove('display-none');
+              }
+            })
+          }
+        })
+      }
     }
   };
 
@@ -692,7 +696,7 @@
             item.addEventListener('click', confirmDeletion);
           })
         }
-      } else if (valueInputSearch == '' && doingResearch) {
+      } else if (valueInputSearch === '' && doingResearch) {
         doingResearch = false;
         bodyTable.innerHTML = '';
         outputDataToTable();
@@ -714,31 +718,31 @@
 
     let arrBodyTable = Array.from(bodyTable.rows);
     let indexCells = columnForSorting !== undefined ? columnForSorting.cellIndex : theadId.cellIndex;
-    sortType = sortType == 'unSorted' || sortType == 'uSort' || sortType == undefined ? 'aSort' : 'uSort';
+    sortType = sortType === 'unSorted' || sortType === 'uSort' || sortType === undefined ? 'aSort' : 'uSort';
 
     setSortingState(indexCells);
 
     arrBodyTable.sort((a, b) => {
       let value1 = a.cells[indexCells].innerText;
       let value2 = b.cells[indexCells].innerText;
-      if (tHead.rows[0].cells[indexCells].getAttribute('data-title') == 'id') {
-        if (sortType == 'aSort') {
+      if (tHead.rows[0].cells[indexCells].getAttribute('data-title') === 'id') {
+        if (sortType === 'aSort') {
           return value1 - value2;
         } else if (sortType == 'uSort') {
           return value2 - value1;
         }
-      } else if (tHead.rows[0].cells[indexCells].getAttribute('data-title') == 'fullName') {
-        if (sortType == 'aSort') {
+      } else if (tHead.rows[0].cells[indexCells].getAttribute('data-title') === 'fullName') {
+        if (sortType === 'aSort') {
           return value1 > value2 ? 1 : -1;
-        } else if (sortType == 'uSort') {
+        } else if (sortType === 'uSort') {
           return value1 < value2 ? 1 : -1;
         }
-      } else if (tHead.rows[0].cells[indexCells].getAttribute('data-title') == 'dateСreation' || tHead.rows[0].cells[indexCells].getAttribute('data-title') == 'dateEdit') {
+      } else if (tHead.rows[0].cells[indexCells].getAttribute('data-title') === 'dateСreation' || tHead.rows[0].cells[indexCells].getAttribute('data-title') === 'dateEdit') {
         value1 = convertToDate(value1);
         value2 = convertToDate(value2);
-        if (sortType == 'aSort') {
+        if (sortType === 'aSort') {
           return value1 > value2 ? 1 : -1;
-        } else if (sortType == 'uSort') {
+        } else if (sortType === 'uSort') {
           return value1 < value2 ? 1 : -1;
         }
       }
@@ -757,7 +761,7 @@
   function setSortingState(indexCells) {
 
     for (let i = 0; tHead.rows[0].cells.length > i; i++) {
-      if (i == indexCells) {
+      if (i === indexCells) {
         tHead.rows[0].cells[i].setAttribute('data-sortState', 'active');
       } else {
         tHead.rows[0].cells[i].setAttribute('data-sortState', 'inactive');
